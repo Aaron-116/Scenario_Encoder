@@ -3,7 +3,28 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\MARL_data\01\Round_1_Scenario_1_3_Vehicle_6.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\MARL_data\test\Round_3_Scenario_12_1_Vehicle_7.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0001\01_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0001\01_tracksMeta.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -17,6 +38,167 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0002\02_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0002\02_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0003\03_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0003\03_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0004\04_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0004\04_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0005\05_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0005\05_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0006\06_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0006\06_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0007\07_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0007\07_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0008\08_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0008\08_tracks.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0008\08_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0009\09_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0009\09_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0010\10_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0010\10_tracksMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0011\11_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0012\12_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0013\13_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\dataset\AD4CHE_Data_V1.0\DJI_0014\14_recordingMeta.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\output\Round_Scenario_1.csv">
           <value>
             <Attribute>
@@ -24,7 +206,49 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\output\scenario_code_1.csv">
+        <entry key="\output\code\Round_Scenario_1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\code\scenario_code_2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\code\scenario_code_3.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\pre_processed\Round_Scenario_1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\pre_processed\Round_Scenario_2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\pre_processed\Round_Scenario_7.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\output\scenario_code_2.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

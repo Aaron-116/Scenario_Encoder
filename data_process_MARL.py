@@ -2,13 +2,13 @@ import pandas as pd
 import csv
 import os
 
-file_source='./test'
+file_source='./MARL_data/test'
 
 count=0
+
 for filename in os.listdir(file_source):
     count+=1
     file_path=os.path.join(file_source,filename)
-
     file_name='./output/Round_Scenario_'+str(count)+'.csv'
 
     header=['frame','ego_id','x','y','ego_offset','width','height','v_x_lane','v_y_lane','acc_x_lane','acc_y_lane','dhw','thw','ttc','laneId','precedingId','followingId','leftPrecedingId',  'leftAlongsideId1', 'leftAlongsideId2', 'leftFollowingId',  'rightPrecedingId', 'rightAlongsideId1', 'rightAlongsideId2','rightFollowingId','orientation','yaw_rate']

@@ -11,6 +11,7 @@ map = {
     22: 427
 }
 
+ego_id = 15
 
 def get_s(roadid, roads):
     """
@@ -39,14 +40,14 @@ for filename in os.listdir(file_source):
     header = ['frame', 'id', 'x', 'y', 's', 'v_x_lane', 'v_y_lane', 'acc_x_lane', 'acc_y_lane', 'dhw', 'thw', 'ttc',
               'laneId',
               'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8', 'BV_0',
-              's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8']
+              's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's0',]
     with open(file_name, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(header)
 
     df = pd.read_csv(file_path)
     df['roadS'] = df.apply(lambda row: get_s(row['roadid'], row['roadS']), axis=1)
-    ego_track = df[df['idx'] == 15]
+    ego_track = df[df['idx'] == ego_id]
     frame_range = df['step'].unique()
     lane_Id_range = df['laneid'].unique()
     id_range = df['idx'].unique()
@@ -64,6 +65,7 @@ for filename in os.listdir(file_source):
         ego_ttc = ego_frame['TTC'].values[0]
         allframe_data = df[df['step'] == frame]
         BV_egolane_frame = allframe_data[allframe_data['laneid'] == ego_lane_Id]
+        BV_egolane_frame = BV_egolane_frame[BV_egolane_frame['idx'] != ego_id]
 
         BV = {
             1: -1,
@@ -85,7 +87,8 @@ for filename in os.listdir(file_source):
             5: None,
             6: None,
             7: None,
-            8: None
+            8: None,
+            0: None
         }
 
         '''筛选位于 Segment 2 7 的BV'''
@@ -93,6 +96,7 @@ for filename in os.listdir(file_source):
             pass
         else:
             BV_front_all = pd.DataFrame(columns=['BV_id', 's_relative', 'position'])
+            BV_back_all = pd.DataFrame(columns=['BV_id', 's_relative', 'position'])
             for s in BV_egolane_frame['roadS']:
                 s_relative = s - ego_s
                 if 5 < s_relative < 105:
@@ -100,8 +104,18 @@ for filename in os.listdir(file_source):
                     position = 2
                     result = [BV_id, s_relative, position]
                     BV_front_all.loc[len(BV_front_all)] = result
+                elif -55 < s_relative < -5:
+                    BV_id = BV_egolane_frame[BV_egolane_frame['roadS'] == s]['idx'].values[0]
+                    position = 7
+                    result = [BV_id, s_relative, position]
+                    BV_back_all.loc[len(BV_back_all)] = result
+                elif -5 <= s_relative <= 5:
+                    BV_id = BV_egolane_frame[BV_egolane_frame['roadS'] == s]['idx'].values[0]
+                    BV[0] = BV_id
+                    s_rela[0] = 0
                 else:
                     pass
+
             if len(BV_front_all) > 1:
                 min_index = BV_front_all['s_relative'].idxmin()
                 BV[2] = BV_front_all.loc[min_index, 'BV_id']
@@ -112,16 +126,6 @@ for filename in os.listdir(file_source):
                 BV[2] = BV_front_all['BV_id'].values[0]
                 s_rela[2] = BV_front_all['s_relative'].values[0]
 
-            BV_back_all = pd.DataFrame(columns=['BV_id', 's_relative', 'position'])
-            for s in BV_egolane_frame['roadS']:
-                s_relative = s - ego_s
-                if -55 < s_relative < -5:
-                    BV_id = BV_egolane_frame[BV_egolane_frame['roadS'] == s]['idx'].values[0]
-                    position = 7
-                    result = [BV_id, s_relative, position]
-                    BV_back_all.loc[len(BV_back_all)] = result
-                else:
-                    pass
             if len(BV_back_all) > 1:
                 max_index = BV_back_all['s_relative'].idxmax()
                 BV[7] = BV_back_all.loc[max_index, 'BV_id']
@@ -242,15 +246,15 @@ for filename in os.listdir(file_source):
 
         # header = ['frame', 'ego_id', 'x', 'y', 's', 'v_x_lane', 'v_y_lane', 'acc_x_lane', 'acc_y_lane', 'dhw', 'thw',
         #           'ttc', 'laneId', 'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8']
-        result = [frame, 15, ego_x, ego_y, ego_s, ego_v_x, ego_v_y, ego_acc_x, ego_acc_y, None, None, ego_ttc, ego_lane_Id,
-                  BV[1], BV[2], BV[3], BV[4], BV[5], BV[6], BV[7], BV[8],
-                  s_rela[1], s_rela[2], s_rela[3], s_rela[4], s_rela[5], s_rela[6], s_rela[7], s_rela[8]]
+        result = [frame, ego_id, ego_x, ego_y, ego_s, ego_v_x, ego_v_y, ego_acc_x, ego_acc_y, None, None, ego_ttc, ego_lane_Id,
+                  BV[1], BV[2], BV[3], BV[4], BV[5], BV[6], BV[7], BV[8], BV[0],
+                  s_rela[1], s_rela[2], s_rela[3], s_rela[4], s_rela[5], s_rela[6], s_rela[7], s_rela[8], s_rela[0]]
         with open(file_name, 'a', newline='') as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(result)
 
     for id in id_range:
-        if id != 15:
+        if id != ego_id:
             BV_data = df[df['idx'] == id]
             f_range = BV_data['step'].unique()
             for frame in f_range:
@@ -267,7 +271,7 @@ for filename in os.listdir(file_source):
                 # header = ['frame', 'ego_id', 'x', 'y', 's', 'v_x_lane', 'v_y_lane', 'acc_x_lane', 'acc_y_lane', 'dhw',
                 #           'thw', 'ttc', 'laneId', 'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8']
                 result = [frame, id, BV_x, BV_y, BV_s, BV_v_x, BV_v_y, BV_acc_x, BV_acc_y, None, None, BV_ttc, BV_lane_Id,
-                          None, None, None, None, None, None, None, None,
+                          None, None, None, None, None, None, None, None, None,
                           None, None, None, None, None, None, None, None]
                 with open(file_name, 'a', newline='') as csv_file:
                     writer = csv.writer(csv_file)

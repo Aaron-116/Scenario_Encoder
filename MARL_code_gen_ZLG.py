@@ -8,14 +8,17 @@ import os
 
 def get_matrix(ego_track):
     # 定义8个segment的BV_id和s_relative, 分别存储在BV_matrix和s_matrix中, 每个segment最多记录2辆BV
-    BV_matrix = -1 * np.ones((2, 8))
-    s_matrix = np.nan * np.empty((2, 8))
+    BV_matrix = -1 * np.ones((2, 9))
+    s_matrix = np.nan * np.empty((2, 9))
     # 记录BV的出现顺序
-    sequence_matrix = np.zeros((4, 8))
+    sequence_matrix = np.zeros((4, 9))
     # 遍历所有segment
-    for i in range(1, 9):
+    for i in range(0, 10):
         # 获取当前segment中所有BV的id
-        data = ego_track[f'BV_{i}']
+        if i == 9:
+            data = ego_track['BV_0']
+        else:
+            data = ego_track[f'BV_{i}']
 
         # 判断出现顺序
         sequence_matrix[0][i - 1] = data[0]
@@ -76,41 +79,74 @@ def get_matrix(ego_track):
 
 
 def encoder(maneuver, BV_matrix, s_matrix, sequence_matrix):
-    code = np.zeros(7)
-    # [maneuver, BV_A, BV_B, BV_C, motion_A, motion_B, motion_C]
-
+    code = {
+        'maneuver': 0,  # 0: LaneKeep, 1: LaneChange
+        'BV_A': 0,      # 0: 不存在BV, 1: 存在BV
+        'BV_B': 0,      # 0: 不存在BV, 1: 存在BV
+        'BV_C': 0,      # 0: 不存在BV, 1: 存在BV
+        'motion_A': 0,  # 0: 纵向保持, 1: 纵向接近
+        'motion_B': 0,  # 0: 纵向保持, 1: 纵向接近
+        'motion_C': 0   # 0: 纵向保持, 1: 纵向接近
+    }
     if maneuver == 'LaneKeep':
-        code[0] = 0
+        code['maneuver'] = 0
         if BV_matrix[0][1] != -1:
             # segment 2 存在BV
-            code[1] = 1
             # 获取segment 2 中BV的出现顺序
             sequence_2 = sequence_matrix[:, 1]
             sequence_2 = sequence_2[sequence_2 != 0]
             if BV_matrix[1][1] != -1:
                 # segment 2 出现第二辆BV
-                code[3] = 1
+                code['BV_C'] = 1
             else:
                 # segment 2 只存在一辆BV，判断motion
                 if len(sequence_2) == 1:
                     # BV一直存在,判断运动
+                    code['BV_A'] = 1
                     if s_matrix[0][1] < -5:
                         # 纵向接近
-                        code[4] = 1
+                        code['motion_A'] = 1
                     else:
                         # 纵向保持或远离
                         pass
                 elif len(sequence_2) == 2:
                     # BV在某个时间点出现
-                    if sequence_2[0]
+                    if sequence_2[0] == -1:
+                        # 切入
+                        code['BV_A'] = 0
+                        code['BV_C'] = 1
+                        # TODO: 判断BV的运动
+
+        if BV_matrix[0][6] != -1:
+            # segment 7 存在BV
+            # 获取segment 7 中BV的出现顺序
+            code['BV_B'] = 1
+            if BV_matrix[1][6] != -1:
+                # segment 7 出现第二辆BV
+                if s_matrix[1][6] < -5:
+                    # 纵向接近
+                    code['motion_B'] = 1
+                else:
+                    # 纵向保持或远离
+                    pass
+            else:
+                # segment 7 只存在一辆BV，判断motion
+                if s_matrix[0][6] < -5:
+                    # 纵向接近
+                    code['motion_B'] = 1
+                else:
+                    # 纵向保持或远离
+                    pass
+
 
         if BV_matrix[0][6] is not None:
             code[2] = 1
     elif maneuver == 'LaneChange':
+        # TODO: 实现LaneChange分类
         pass
 
 
-    return code
+    return [code['maneuver'], code['BV_A'], code['BV_B'], code['BV_C'], code['motion_A'], code['motion_B'], code['motion_C']]
 
 
 def detect_IBVs(flag, df):
@@ -127,6 +163,7 @@ def detect_IBVs(flag, df):
 
 source_directory = './output/pre_processed'
 output_directory = './output/code'
+codes = pd.DataFrame(columns=['maneuver', 'BV_A', 'BV_B', 'BV_C', 'motion_A', 'motion_B', 'motion_C'])
 
 for track in os.listdir(source_directory):
     output_file_name = output_directory + '/' + track[:-4] + '.csv'
@@ -150,6 +187,8 @@ for track in os.listdir(source_directory):
     else:  # 发生了换道
         maneuver = 'LaneChange'
         continue
+
+    codes.loc[len(codes)] = code
 
     # header = ['init_frame', 'end_frame', 'ego_id', 'velocity', 'acceleration', 'ttc', 'maneuver',
     #           'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8',

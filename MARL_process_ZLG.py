@@ -24,7 +24,7 @@ def get_s(roadid, roads):
     elif roadid == 13:
         s = map[2] + map[16] + roads
     else:
-        s = -100
+        s = -1000
     return s
 
 
@@ -33,6 +33,7 @@ file_source = './MARL_data/Critical_Scenarios'
 count = 0
 
 for filename in os.listdir(file_source):
+    name = filename[:-4]
     count += 1
     file_path = os.path.join(file_source, filename)
     file_name = './output/pre_processed/Round_Scenario_' + str(count) + '.csv'
@@ -40,7 +41,8 @@ for filename in os.listdir(file_source):
     header = ['frame', 'id', 'x', 'y', 's', 'v_x_lane', 'v_y_lane', 'acc_x_lane', 'acc_y_lane', 'dhw', 'thw', 'ttc',
               'laneId',
               'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8', 'BV_0',
-              's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's0',]
+              's1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's0',
+              'file_name']
     with open(file_name, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(header)
@@ -248,7 +250,8 @@ for filename in os.listdir(file_source):
         #           'ttc', 'laneId', 'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8']
         result = [frame, ego_id, ego_x, ego_y, ego_s, ego_v_x, ego_v_y, ego_acc_x, ego_acc_y, None, None, ego_ttc, ego_lane_Id,
                   BV[1], BV[2], BV[3], BV[4], BV[5], BV[6], BV[7], BV[8], BV[0],
-                  s_rela[1], s_rela[2], s_rela[3], s_rela[4], s_rela[5], s_rela[6], s_rela[7], s_rela[8], s_rela[0]]
+                  s_rela[1], s_rela[2], s_rela[3], s_rela[4], s_rela[5], s_rela[6], s_rela[7], s_rela[8], s_rela[0],
+                  name]
         with open(file_name, 'a', newline='') as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(result)
@@ -272,9 +275,10 @@ for filename in os.listdir(file_source):
                 #           'thw', 'ttc', 'laneId', 'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8']
                 result = [frame, id, BV_x, BV_y, BV_s, BV_v_x, BV_v_y, BV_acc_x, BV_acc_y, None, None, BV_ttc, BV_lane_Id,
                           None, None, None, None, None, None, None, None, None,
-                          None, None, None, None, None, None, None, None]
+                          None, None, None, None, None, None, None, None,
+                          None]
                 with open(file_name, 'a', newline='') as csv_file:
                     writer = csv.writer(csv_file)
                     writer.writerow(result)
-        else:
-            pass
+    if count >= 1000:
+        break

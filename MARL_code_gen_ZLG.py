@@ -5,6 +5,8 @@ import pandas as pd
 import csv
 import os
 
+ego_id = 20
+
 
 def get_matrix(ego_track):
     # 定义8个segment的BV_id和s_relative, 分别存储在BV_matrix和s_matrix中, 每个segment最多记录2辆BV
@@ -12,6 +14,8 @@ def get_matrix(ego_track):
     s_matrix = np.nan * np.empty((2, 9))
     # 记录BV的出现顺序
     sequence_matrix = np.zeros((4, 9))
+    min_index = ego_track.index[0]
+    init_laneid = ego_track.at[min_index, 'laneId']
     # 遍历所有segment
     for i in range(0, 10):
         # 获取当前segment中所有BV的id
@@ -19,12 +23,15 @@ def get_matrix(ego_track):
             m = 0
         else:
             m = i
-        data = ego_track[f'BV_{m}']
-
+        data = ego_track[ego_track['laneId'] == init_laneid][f'BV_{m}']
         # 判断出现顺序
         sequence_matrix[0][m - 1] = data[0]
         k = 1
         for j in range(1, len(data)):
+            try:
+                a = data[j]
+            except:
+                break
             if data[j] != data[j - 1]:
                 sequence_matrix[k][m - 1] = data[j]
                 k += 1
@@ -75,183 +82,231 @@ def get_matrix(ego_track):
     return BV_matrix, s_matrix, sequence_matrix
 
 
-def encoder(maneuver, BV_matrix, s_matrix, sequence_matrix):
+def get_mm_matrix(df, bv_matrix, s_matrix):
+    # BV_C BV_A BV_B
+    mm_matrix = [
+        np.array([-1, -1, -1]),
+        np.array(['lane-keep', 'lane-keep', 'lane-keep']),
+        np.array(['vel-keep', 'vel-keep', 'vel-keep'])
+    ]
+    ego_laneId = df[df["id"] == ego_id]['laneId'].unique()
+    # 判断自车转向，True: 右转, False: 左转
+    turn_flag = ego_laneId[0] > ego_laneId[1]
+    if turn_flag:
+        m = 2
+        n = 7
+    else:
+        m = 0
+        n = 5
+    # segment 2
+    if bv_matrix[1, 1] != -1:
+        mm_matrix[0][0] = bv_matrix[1, 1]
+        min_s = s_matrix[:, 1].argmin()
+        BV = bv_matrix[min_s][1]
+        laneId = df[df["id"] == BV]['laneId'].unique()
+        if len(laneId) == 2:
+            bv_turn_flag = laneId[0] > laneId[1]
+            # 判断BV转向与自车转向是否一致
+            if turn_flag == bv_turn_flag and ego_laneId[0] == laneId[1]:
+                mm_matrix[1][0] = 'cut-in'
+            elif turn_flag == bv_turn_flag and ego_laneId[1] == laneId[1]:
+                mm_matrix[1][0] = 'cut-out'
+        if s_matrix[1][1] < -5:
+            mm_matrix[2][0] = 'dec'
+    else:
+        if bv_matrix[0, 1] != -1:
+            mm_matrix[0][0] = bv_matrix[0, 1]
+            BV = bv_matrix[0][1]
+            laneId = df[df["id"] == BV]['laneId'].unique()
+            if len(laneId) == 2:
+                bv_turn_flag = laneId[0] > laneId[1]
+                if turn_flag == bv_turn_flag and ego_laneId[0] == laneId[1]:
+                    mm_matrix[1][0] = 'cut-in'
+                elif turn_flag == bv_turn_flag and ego_laneId[1] == laneId[1]:
+                    mm_matrix[1][0] = 'cut-out'
+            if s_matrix[0][1] < -5:
+                mm_matrix[2][0] = 'dec'
+
+    # segment 3 or 8
+    if bv_matrix[1, m] != -1:
+        mm_matrix[0][1] = bv_matrix[1, m]
+        min_s = s_matrix[:, m].argmin()
+        BV = bv_matrix[min_s][m]
+        laneId = df[df["id"] == BV]['laneId'].unique()
+        if len(laneId) == 2:
+            bv_turn_flag = laneId[0] > laneId[1]
+            if turn_flag != bv_turn_flag and ego_laneId[0] == laneId[1]:
+                mm_matrix[1][1] = 'cut-out'
+            elif turn_flag != bv_turn_flag and ego_laneId[1] == laneId[1]:
+                mm_matrix[1][1] = 'cut-in'
+        if s_matrix[1][m] < -5:
+            mm_matrix[2][1] = 'dec'
+    else:
+        if bv_matrix[0, m] != -1:
+            mm_matrix[0][1] = bv_matrix[0, m]
+            BV = bv_matrix[0][m]
+            laneId = df[df["id"] == BV]['laneId'].unique()
+            if len(laneId) == 2:
+                bv_turn_flag = laneId[0] > laneId[1]
+                if turn_flag != bv_turn_flag and ego_laneId[0] == laneId[1]:
+                    mm_matrix[1][1] = 'cut-out'
+                elif turn_flag != bv_turn_flag and ego_laneId[1] == laneId[1]:
+                    mm_matrix[1][1] = 'cut-in'
+            if s_matrix[0][m] < -5:
+                mm_matrix[2][1] = 'dec'
+
+    # segment 1 or 6
+    if bv_matrix[1, n] != -1:
+        mm_matrix[0][2] = bv_matrix[1, n]
+        if s_matrix[1][n] < -5:
+            mm_matrix[2][2] = 'dec'
+    else:
+        if bv_matrix[0, n] != -1:
+            mm_matrix[0][2] = bv_matrix[0, n]
+            if s_matrix[0][n] < -5:
+                mm_matrix[2][2] = 'dec'
+
+    # 检查两辆车是否相同
+    if mm_matrix[0][0] == mm_matrix[0][1]:
+        if mm_matrix[1][0] == 'cut-out' and mm_matrix[1][1] == 'lane-keep':
+            mm_matrix[0][1] = -1
+        elif mm_matrix[1][1] == 'cut-out' and mm_matrix[1][0] == 'lane-keep':
+            mm_matrix[0][0] = -1
+    return mm_matrix
+
+
+def encoder_lk(BV_matrix, s_matrix, sequence_matrix):
     code = {
-        'maneuver': 0,  # 0: LaneKeep, 1: LaneChange
+        'maneuver': 0,  # 0: LaneKeep
         'BV_A': 0,  # 0: 不存在BV, 1: 存在BV
         'BV_B': 0,  # 0: 不存在BV, 1: 存在BV
         'BV_C': 0,  # 0: 不存在BV, 1: 存在BV
-        'motion_A': 0,  # 0: 纵向保持+横向保持, 1: 纵向接近+横向保持, 2: 纵向保持+变道, 3: 纵向接近+变道
+        'motion_A': 0,  # LaneKeep 0: 纵向保持+横向保持, 1: 纵向接近+横向保持
         'motion_B': 0,  # 0: 纵向保持, 1: 纵向接近
-        'motion_C': 0  # 0: 纵向保持+横向保持, 1: 纵向接近+横向保持, 2: 纵向保持+变道, 3: 纵向接近+变道
+        'motion_C': 0  # LaneKeep 0: 纵向保持+横向保持, 1: 纵向接近+横向保持
     }
-    if maneuver == 'LaneKeep':
-        code['maneuver'] = 0
-        if BV_matrix[0][1] != -1:
-            # segment 2 存在BV
-            # 获取segment 2 中BV的出现顺序
-            sequence_2 = sequence_matrix[:, 1]
-            sequence_2 = sequence_2[sequence_2 != 0]
-            if BV_matrix[1][1] != -1:
-                # segment 2 出现第二辆BV
-                # BV_A存在，BV_C切入
-                code['BV_A'] = 1
+    if BV_matrix[0][1] != -1:
+        # segment 2 存在BV
+        # 获取segment 2 中BV的出现顺序
+        sequence_2 = sequence_matrix[:, 1]
+        sequence_2 = sequence_2[sequence_2 != 0]
+        if BV_matrix[1][1] != -1:
+            # segment 2 出现第二辆BV
+            # BV_A存在，BV_C切入
+            code['BV_A'] = 1
+            code['BV_C'] = 1
+            if s_matrix[0][1] < -5:
+                # 纵向接近+不变道
+                code['motion_A'] = 1
+            else:
+                code['motion_A'] = 0
+            if s_matrix[1][1] < -5:
+                # 纵向接近+变道
+                code['motion_C'] = 1
+            else:
+                code['motion_C'] = 0
+        else:
+            # segment 2 只存在一辆BV，判断motion
+            if len(sequence_2) == 2 and sequence_2[0] == -1:
+                # BV_A不存在，BV_C切入
+                code['BV_A'] = 0
                 code['BV_C'] = 1
-                if s_matrix[0][1] < -5:
-                    # 纵向接近+不变道
-                    code['motion_A'] = 1
-                else:
-                    code['motion_A'] = 0
                 if s_matrix[1][1] < -5:
                     # 纵向接近+变道
-                    code['motion_C'] = 3
-                else:
-                    code['motion_C'] = 2
-            else:
-                # segment 2 只存在一辆BV，判断motion
-                if len(sequence_2) == 2 and sequence_2[0] == -1:
-                    # BV_A不存在，BV_C切入
-                    code['BV_A'] = 0
-                    code['BV_C'] = 1
-                    if s_matrix[0][1] < -5:
-                        # 纵向接近
-                        code['motion_A'] = 1
-                    else:
-                        code['motion_A'] = 0
-
-                    if s_matrix[1][1] < -5:
-                        # 纵向接近+变道
-                        code['motion_C'] = 3
-                    else:
-                        # 纵向保持+变道
-                        code['motion_C'] = 2
-                else:
-                    # BV_A切出
-                    code['BV_A'] = 1
-                    if s_matrix[0][1] < -5:
-                        # 纵向接近
-                        code['motion_A'] = 1
-                    else:
-                        # 纵向保持或远离
-                        pass
-
-        if BV_matrix[0][6] != -1:
-            # segment 7 存在BV
-            code['BV_B'] = 1
-            if BV_matrix[1][6] != -1:
-                # segment 7 出现第二辆BV
-                if s_matrix[1][6] < -5:
-                    # 纵向接近
-                    code['motion_B'] = 1
-                else:
-                    # 纵向保持或远离
-                    pass
-            else:
-                # segment 7 只存在一辆BV，判断motion
-                if s_matrix[0][6] < -5:
-                    # 纵向接近
-                    code['motion_B'] = 1
-                else:
-                    # 纵向保持或远离
-                    pass
-
-    elif maneuver == 'LaneChange':
-        code['maneuver'] = 1
-        # 获取segment 2 中BV的出现顺序
-        sequence_2 = sequence_matrix[:, 2]
-        sequence_2 = sequence_2[sequence_2 != 0]
-        # 获取segment 3 中BV的出现顺序
-        sequence_3 = sequence_matrix[:, 3]
-        sequence_3 = sequence_3[sequence_3 != 0]
-        if BV_matrix[0][1] != -1:
-            # segment 2 存在BV
-            if BV_matrix[1][1] != -1:
-                # segment 2 出现第二辆BV
-                # 将第二辆BV视为BV_C
-                code['BV_C'] = 1
-                if s_matrix[0][2] < -5:
-                    # 纵向接近+不变道
                     code['motion_C'] = 1
-            else:
-                # segment 2 只存在一辆BV，判断motion
-                if len(sequence_2) == 2 and sequence_2[0] == -1:
-                    # BV_C原本不存在，后面切入
-                    code['BV_C'] = 1
-                    if s_matrix[0][2] < -5:
-                        # 纵向接近
-                        code['motion_C'] = 1
-                    else:
-                        code['motion_C'] = 0
                 else:
-                    # BV_C原本存在，后面切出
-                    code['BV_C'] = 1
-                    if s_matrix[0][2] < -5:
-                        # 纵向接近
-                        code['motion_C'] = 1
-                    else:
-                        code['motion_C'] = 0
-        if BV_matrix[0][2] != -1:
-            # segment 3 存在BV
-            if BV_matrix[1][2] != -1:
-                # segment 3 出现第二辆BV
-                # 将第二辆BV视为BV_A
-                # 判断是否和BV_C为同一辆
-                if code['BV_C'] == 1:
-                    if sequence_2[0] == BV_matrix[1][2]:
-                        # 是同一辆BV
-                        code['BV_A'] = 0
-                    else:
-                        # 不是同一辆BV
-                        code['BV_A'] = 1
-                        if s_matrix[1][2] < -5:
-                            # 纵向接近
-                            code['motion_A'] = 3
-                        else:
-                            code['motion_A'] = 2
+                    # 纵向保持+变道
+                    code['motion_C'] = 0
             else:
-                # segment 3 只存在一辆BV，判断motion
-                if len(sequence_3) == 2 and sequence_3[0] == -1:
-                    # BV_A原本不存在，后面切入
-                    code['BV_A'] = 1
-                    if s_matrix[0][3] < -5:
-                        # 纵向接近
-                        code['motion_A'] = 3
-                    else:
-                        code['motion_A'] = 2
-                else:
-                    # BV_A原本存在，后面切出
-                    code['BV_A'] = 1
-                    if s_matrix[0][3] < -5:
-                        # 纵向接近
-                        code['motion_A'] = 1
-                    else:
-                        code['motion_A'] = 0
-        if BV_matrix[0][7] != -1:
-            # segment 8 存在BV
-            code['BV_B'] = 1
-            if BV_matrix[1][7] != -1:
-                # segment 8 出现第二辆BV
-                if s_matrix[0][7] < -5:
+                # BV_A切出
+                code['BV_A'] = 1
+                if s_matrix[0][1] < -5:
                     # 纵向接近
-                    code['motion_B'] = 1
+                    code['motion_A'] = 1
                 else:
-                    # 纵向保持
-                    code['motion_B'] = 0
-            else:
-                # segment 8 只存在一辆BV，判断motion
-                if s_matrix[0][7] < -5:
-                    # 纵向接近
-                    code['motion_B'] = 1
-                else:
-                    # 纵向保持
-                    code['motion_B'] = 0
+                    # 纵向保持或远离
+                    pass
 
+    if BV_matrix[0][6] != -1:
+        # segment 7 存在BV
+        code['BV_B'] = 1
+        if BV_matrix[1][6] != -1:
+            # segment 7 出现第二辆BV
+            if s_matrix[1][6] < -5:
+                # 纵向接近
+                code['motion_B'] = 1
+            else:
+                # 纵向保持或远离
+                pass
+        else:
+            # segment 7 只存在一辆BV，判断motion
+            if s_matrix[0][6] < -5:
+                # 纵向接近
+                code['motion_B'] = 1
+            else:
+                # 纵向保持或远离
+                pass
     return [code['maneuver'], code['BV_A'], code['BV_B'], code['BV_C'], code['motion_A'], code['motion_B'],
             code['motion_C']]
 
+
+def encoder_lc(mm_matrix):
+    code = {
+        'maneuver': 1,  # 0: LaneKeep
+        'BV_A': 0,  # 0: 不存在BV, 1: 存在BV
+        'BV_B': 0,  # 0: 不存在BV, 1: 存在BV
+        'BV_C': 0,  # 0: 不存在BV, 1: 存在BV
+        'motion_A': 0,  # LaneKeep 0: 纵向保持+横向保持, 1: 纵向接近+横向保持
+        'motion_B': 0,  # 0: 纵向保持, 1: 纵向接近
+        'motion_C': 0  # LaneKeep 0: 纵向保持+横向保持, 1: 纵向接近+横向保持
+    }
+
+    if mm_matrix[0][0] != -1:
+        code['BV_C'] = 1
+        if mm_matrix[1][2] == 'vel-keep':
+            if mm_matrix[1][1] == 'lane-keep':
+                code['motion_C'] = 0
+            elif mm_matrix[1][1] == 'cut-out':
+                code['motion_C'] = 1
+            elif mm_matrix[1][1] == 'cut-in':
+                code['motion_C'] = 2
+        else:
+            if mm_matrix[1][1] == 'lane-keep':
+                code['motion_C'] = 3
+            elif mm_matrix[1][1] == 'cut-out':
+                code['motion_C'] = 4
+            elif mm_matrix[1][1] == 'cut-in':
+                code['motion_C'] = 5
+    if mm_matrix[0][1] != -1:
+        code['BV_A'] = 1
+        if mm_matrix[1][2] == 'vel-keep':
+            if mm_matrix[1][1] == 'lane-keep':
+                code['motion_A'] = 0
+            elif mm_matrix[1][1] == 'cut-out':
+                code['motion_A'] = 1
+            elif mm_matrix[1][1] == 'cut-in':
+                code['motion_A'] = 2
+        else:
+            if mm_matrix[1][1] == 'lane-keep':
+                code['motion_A'] = 3
+            elif mm_matrix[1][1] == 'cut-out':
+                code['motion_A'] = 4
+            elif mm_matrix[1][1] == 'cut-in':
+                code['motion_A'] = 5
+    if mm_matrix[0][2] != -1:
+        code['BV_B'] = 1
+        if mm_matrix[1][2] == 'vel-keep':
+            code['motion_B'] = 0
+        else:
+            code['motion_B'] = 1
+    return [code['maneuver'], code['BV_A'], code['BV_B'], code['BV_C'], code['motion_A'], code['motion_B'],
+            code['motion_C']]
+
+
 source_directory = './output/pre_processed'
 output_directory = './output/code'
-header = pd.DataFrame(columns=['source_file', 'track_name', 'maneuver', 'BV_A', 'BV_B', 'BV_C', 'motion_A', 'motion_B', 'motion_C'])
+header = pd.DataFrame(
+    columns=['source_file', 'track_name', 'maneuver', 'BV_A', 'BV_B', 'BV_C', 'motion_A', 'motion_B', 'motion_C'])
 output_file_name = output_directory + '/' + 'codes.csv'
 with open(output_file_name, 'w', newline='') as csv_file:
     writer = csv.writer(csv_file)
@@ -264,7 +319,7 @@ for track in os.listdir(source_directory):
     df = pd.read_csv(source_file_path)
 
     # 在“track”中找到该id的场景起始帧和结束帧
-    ego_track = df[df['id'] == 15]
+    ego_track = df[df['id'] == ego_id]
     ego_frame_range_actual = ego_track['frame'].unique()
     ego_end_frame_index = ego_frame_range_actual[-1]
     ego_init_frame_index = ego_frame_range_actual[0]
@@ -275,11 +330,14 @@ for track in os.listdir(source_directory):
     # 判断maneuver
     if len(ego_lane_change_flag) == 1:  # 无换道
         maneuver = 'LaneKeep'
+        BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
+        code = encoder_lk(BV_matrix, s_matrix, sequence_matrix)
     else:  # 发生了换道
         maneuver = 'LaneChange'
+        BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
+        mm_matrix = get_mm_matrix(df, BV_matrix, s_matrix)
+        code = encoder_lc(mm_matrix)
     # 建立position， motion矩阵
-    BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
-    code = encoder(maneuver, BV_matrix, s_matrix, sequence_matrix)
 
     code.insert(0, track_name)
     code.insert(0, source_file_name)
@@ -297,7 +355,7 @@ for track in os.listdir(source_directory):
     # acceleration = math.sqrt(ego_init_frame['acc_x_lane'].values[0] ** 2 + ego_init_frame['acc_y_lane'].values[0] ** 2)
     # ttc = ego_init_frame['ttc'].values[0]
     #
-    # result = [ego_init_frame_index, ego_end_frame_index, 15, velocity, acceleration, ttc, maneuver,
+    # result = [ego_init_frame_index, ego_end_frame_index, ego_id, velocity, acceleration, ttc, maneuver,
     #           ]
 
     with open(output_file_name, 'a', newline='') as csv_file:

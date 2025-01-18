@@ -2,7 +2,7 @@ import pandas as pd
 import csv
 import os
 
-file_source='./MARL_data/test'
+file_source= '../MARL_data/test'
 
 count=0
 

@@ -11,7 +11,7 @@ map = {
     22: 427
 }
 
-ego_id = 15
+ego_id = 20
 
 def get_s(roadid, roads):
     """
@@ -34,10 +34,22 @@ count = 0
 
 for filename in os.listdir(file_source):
     name = filename[:-4]
-    count += 1
     file_path = os.path.join(file_source, filename)
     file_name = './output/pre_processed/Round_Scenario_' + str(count) + '.csv'
-    #输出的header
+
+    df = pd.read_csv(file_path)
+    df['roadS'] = df.apply(lambda row: get_s(row['roadid'], row['roadS']), axis=1)
+    ego_track = df[df['idx'] == ego_id]
+    frame_range = df['step'].unique()
+    if len(frame_range) < 20:
+        continue
+    count += 1
+    lane_Id_range = df['laneid'].unique()
+    ego_lane_id_range = ego_track['laneid'].unique()
+    if len(ego_lane_id_range) > 2:
+        continue
+    id_range = df['idx'].unique()
+    # 输出的header
     header = ['frame', 'id', 'x', 'y', 's', 'v_x_lane', 'v_y_lane', 'acc_x_lane', 'acc_y_lane', 'dhw', 'thw', 'ttc',
               'laneId',
               'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8', 'BV_0',
@@ -46,13 +58,6 @@ for filename in os.listdir(file_source):
     with open(file_name, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerow(header)
-
-    df = pd.read_csv(file_path)
-    df['roadS'] = df.apply(lambda row: get_s(row['roadid'], row['roadS']), axis=1)
-    ego_track = df[df['idx'] == ego_id]
-    frame_range = df['step'].unique()
-    lane_Id_range = df['laneid'].unique()
-    id_range = df['idx'].unique()
 
     for frame in frame_range:
         ego_frame = ego_track[ego_track['step'] == frame]
@@ -131,7 +136,7 @@ for filename in os.listdir(file_source):
             if len(BV_back_all) > 1:
                 max_index = BV_back_all['s_relative'].idxmax()
                 BV[7] = BV_back_all.loc[max_index, 'BV_id']
-                s_rela[7] = BV_back_all.loc[max_index, 's_relative']
+                s_rela[7] = -BV_back_all.loc[max_index, 's_relative']
             elif len(BV_back_all) == 0:
                 pass
             else:
@@ -185,7 +190,7 @@ for filename in os.listdir(file_source):
                 if len(BV_8_all) > 1:
                     max_index = BV_8_all['s_relative'].idxmax()
                     BV[8] = BV_8_all.loc[max_index, 'BV_id']
-                    s_rela[8] = BV_8_all.loc[max_index, 's_relative']
+                    s_rela[8] = -BV_8_all.loc[max_index, 's_relative']
                 elif len(BV_8_all) == 0:
                     pass
                 else:
@@ -239,7 +244,7 @@ for filename in os.listdir(file_source):
                 if len(BV_6_all) > 1:
                     max_index = BV_6_all['s_relative'].idxmax()
                     BV[6] = BV_6_all.loc[max_index, 'BV_id']
-                    s_rela[6] = BV_6_all.loc[max_index, 's_relative']
+                    s_rela[6] = -BV_6_all.loc[max_index, 's_relative']
                 elif len(BV_6_all) == 0:
                     pass
                 else:

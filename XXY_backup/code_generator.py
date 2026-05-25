@@ -365,9 +365,9 @@ def parameter_extract(df, cur_id, init_frame, ego_frame_data, sce_type):
 
 
 
-source_directory = 'D:\Group\小论文demo\场景编码代码\dataset\AD4CHE_Data_V1.0'
+source_directory = 'D:\Group\Github\Scenario_Encoder\dataset\AD4CHE_Data_V1.0'
 
-for q in range(1, 2):
+for q in range(1, 69):
     source = source_directory + '/DJI_00' + str(q).zfill(2)
 
     trackdata = data_adjustment(source,1)

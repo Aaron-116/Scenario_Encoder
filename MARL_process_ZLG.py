@@ -28,14 +28,14 @@ def get_s(roadid, roads):
     return s
 
 
-file_source = './MARL_data/Critical_Scenarios'
+file_source = './MARL_data/Critical_Scenarios_260525'
 
 count = 0
 
 for filename in os.listdir(file_source):
     name = filename[:-4]
     file_path = os.path.join(file_source, filename)
-    file_name = './output/pre_processed/Round_Scenario_' + str(count) + '.csv'
+    file_name = './output/pre_processed_260525/Round_Scenario_' + str(count) + '.csv'
 
     df = pd.read_csv(file_path)
     df['roadS'] = df.apply(lambda row: get_s(row['roadid'], row['roadS']), axis=1)
@@ -44,6 +44,7 @@ for filename in os.listdir(file_source):
     if len(frame_range) < 20:
         continue
     count += 1
+    print(count)
     lane_Id_range = df['laneid'].unique()
     ego_lane_id_range = ego_track['laneid'].unique()
     if len(ego_lane_id_range) > 2:
@@ -285,5 +286,5 @@ for filename in os.listdir(file_source):
                 with open(file_name, 'a', newline='') as csv_file:
                     writer = csv.writer(csv_file)
                     writer.writerow(result)
-    if count >= 1000:
+    if count >= 8000:
         break

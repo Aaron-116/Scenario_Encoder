@@ -303,70 +303,73 @@ def encoder_lc(mm_matrix):
             code['motion_C']]
 
 
-source_directory = './output/pre_processed_260525'
-output_directory = './output/code_260525'
-header = pd.DataFrame(
-    columns=['source_file', 'track_name', 'maneuver', 'BV_A', 'BV_B', 'BV_C', 'motion_A', 'motion_B', 'motion_C', 'TTC'])
-output_file_name = output_directory + '/' + 'codes.csv'
-with open(output_file_name, 'w', newline='') as csv_file:
-    writer = csv.writer(csv_file)
-    writer.writerow(header)
+source_directory = './output/pre_processed'
+# output_directory = './output/code'
+# header = pd.DataFrame(
+#     columns=['source_file', 'track_name', 'maneuver', 'BV_A', 'BV_B', 'BV_C', 'motion_A', 'motion_B', 'motion_C', 'TTC'])
+# output_file_name = output_directory + '/' + 'codes.csv'
+# with open(output_file_name, 'w', newline='') as csv_file:
+#     writer = csv.writer(csv_file)
+#     writer.writerow(header)
 
-for track in os.listdir(source_directory):
+# for track in os.listdir(source_directory):
     # output_file_name = output_directory + '/' + track[:-4] + '.csv'
-    track_name = track[:-4]
-    source_file_path = os.path.join(source_directory, track)
-    df = pd.read_csv(source_file_path)
+track = 'Round_Scenario_1013.csv'
+track_name = track[:-4]
+source_file_path = os.path.join(source_directory, track)
+df = pd.read_csv(source_file_path)
 
-    # 在“track”中找到该id的场景起始帧和结束帧
-    ego_track = df[df['id'] == ego_id]
-    ego_frame_range_actual = ego_track['frame'].unique()
-    ego_end_frame_index = ego_frame_range_actual[-1]
-    ego_init_frame_index = ego_frame_range_actual[0]
-    ego_init_frame = ego_track[ego_track['frame'] == ego_init_frame_index]
-    source_file_name = ego_init_frame['file_name']
-    ego_lane_change_flag = ego_track['laneId'].unique()
+# 在“track”中找到该id的场景起始帧和结束帧
+ego_track = df[df['id'] == ego_id]
+ego_frame_range_actual = ego_track['frame'].unique()
+ego_end_frame_index = ego_frame_range_actual[-1]
+ego_init_frame_index = ego_frame_range_actual[0]
+ego_init_frame = ego_track[ego_track['frame'] == ego_init_frame_index]
+source_file_name = ego_init_frame['file_name']
+ego_lane_change_flag = ego_track['laneId'].unique()
 
-    # 判断maneuver
-    if len(ego_lane_change_flag) == 1:  # 无换道
-        maneuver = 'LaneKeep'
-        BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
-        code = encoder_lk(BV_matrix, s_matrix, sequence_matrix)
-    else:  # 发生了换道
-        maneuver = 'LaneChange'
-        BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
-        mm_matrix = get_mm_matrix(df, BV_matrix, s_matrix)
-        code = encoder_lc(mm_matrix)
-    # 建立position， motion矩阵
+# 判断maneuver
+if len(ego_lane_change_flag) == 1:  # 无换道
+    maneuver = 'LaneKeep'
+    BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
+    code = encoder_lk(BV_matrix, s_matrix, sequence_matrix)
+else:  # 发生了换道
+    maneuver = 'LaneChange'
+    BV_matrix, s_matrix, sequence_matrix = get_matrix(ego_track)
+    mm_matrix = get_mm_matrix(df, BV_matrix, s_matrix)
+    code = encoder_lc(mm_matrix)
+print(BV_matrix)
+print(sequence_matrix)
+# 建立position， motion矩阵
+#
+# min_ttc = ego_track['ttc'].min()
+# # 如果trackname中的第4个_后面的数字是1，则表示碰撞，TTC=0
+# filename = ego_init_frame['file_name']
+# parts = filename.values[0].split('_')
+# if parts[4].isdigit() and int(parts[4]) == 1:
+#     # 如果第4个_后面的数字是1，表示有碰撞，设定TTC为0
+#     min_ttc = 0
+# code.append(min_ttc)
+#
+# code.insert(0, track_name)
+# code.insert(0, source_file_name)
+# # codes.loc[len(codes)] = code
 
-    min_ttc = ego_track['ttc'].min()
-    # 如果trackname中的第4个_后面的数字是1，则表示碰撞，TTC=0
-    filename = ego_init_frame['file_name']
-    parts = filename.values[0].split('_')
-    if parts[4].isdigit() and int(parts[4]) == 1:
-        # 如果第4个_后面的数字是1，表示有碰撞，设定TTC为0
-        min_ttc = 0
-    code.append(min_ttc)
-
-    code.insert(0, track_name)
-    code.insert(0, source_file_name)
-    # codes.loc[len(codes)] = code
-
-    # header = ['init_frame', 'end_frame', 'ego_id', 'velocity', 'acceleration', 'ttc', 'maneuver',
-    #           'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8',
-    #           'IBV_A', 's_relative_A', 'v_A', 'a_A', 'LaneChange_A',
-    #           'IBV_B', 's_relative_B', 'v_B', 'a_B', 'LaneChange_B',
-    #           'IBV_C', 's_relative_C', 'v_C', 'a_C', 'LaneChange_C',
-    #           'code']
-    # # 自车信息
-    # ego_init_frame = ego_track[ego_track['frame'] == ego_init_frame_index]
-    # velocity = math.sqrt(ego_init_frame['v_x_lane'].values[0] ** 2 + ego_init_frame['v_y_lane'].values[0] ** 2)
-    # acceleration = math.sqrt(ego_init_frame['acc_x_lane'].values[0] ** 2 + ego_init_frame['acc_y_lane'].values[0] ** 2)
-    # ttc = ego_init_frame['ttc'].values[0]
-    #
-    # result = [ego_init_frame_index, ego_end_frame_index, ego_id, velocity, acceleration, ttc, maneuver,
-    #           ]
-
-    with open(output_file_name, 'a', newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(code)
+# header = ['init_frame', 'end_frame', 'ego_id', 'velocity', 'acceleration', 'ttc', 'maneuver',
+#           'BV_1', 'BV_2', 'BV_3', 'BV_4', 'BV_5', 'BV_6', 'BV_7', 'BV_8',
+#           'IBV_A', 's_relative_A', 'v_A', 'a_A', 'LaneChange_A',
+#           'IBV_B', 's_relative_B', 'v_B', 'a_B', 'LaneChange_B',
+#           'IBV_C', 's_relative_C', 'v_C', 'a_C', 'LaneChange_C',
+#           'code']
+# # 自车信息
+# ego_init_frame = ego_track[ego_track['frame'] == ego_init_frame_index]
+# velocity = math.sqrt(ego_init_frame['v_x_lane'].values[0] ** 2 + ego_init_frame['v_y_lane'].values[0] ** 2)
+# acceleration = math.sqrt(ego_init_frame['acc_x_lane'].values[0] ** 2 + ego_init_frame['acc_y_lane'].values[0] ** 2)
+# ttc = ego_init_frame['ttc'].values[0]
+#
+# result = [ego_init_frame_index, ego_end_frame_index, ego_id, velocity, acceleration, ttc, maneuver,
+#           ]
+#
+# with open(output_file_name, 'a', newline='') as csv_file:
+#     writer = csv.writer(csv_file)
+#     writer.writerow(code)
